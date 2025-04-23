@@ -4,4 +4,5 @@ Little .asm scripts for a chip of the [MCS-48](https://es.wikipedia.org/wiki/Int
 
 ## Descriptions
 
-- blink.asm, simple hello world, slightly modified version of author's [example](https://www.youtube.com/watch?v=K83uTnW6IHU) to alternate pin output in P1
+- [blink.asm](./blink.asm), simple hello world, a slightly modified version of author's [example](https://www.youtube.com/watch?v=K83uTnW6IHU) to alternate output bits in P1
+- [inc.awk](./inc.awk), script to generate a snippet to be copied into an arduino sketch with the parsed output of `hexdump -C` of an output .bin
