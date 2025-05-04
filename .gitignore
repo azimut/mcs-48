@@ -1,3 +1,7 @@
-/*.hex
-/*.bin
-/*.inc
+*.hex
+*.bin
+*.inc
+*.hlr
+*.lst
+*.rel
+*.rom
