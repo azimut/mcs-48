@@ -11,15 +11,15 @@ reset:
 
         .org 0x10
 entry:
-        mov  A,    #0x0A  ; 00001010
+        mov  A,    #0x0A ; 00001010
         outl P2,   A
         call delay
 
-        mov  A,    #0x05  ; 00000101
+        mov  A,    #0x05 ; 00000101
         outl P2,   A
         call delay
 
-        jmp  entry        ; repeat main loop
+        jmp  entry       ; repeat main loop
 
 
 delay:  mov  R0, #255   ; init outer loop counter
