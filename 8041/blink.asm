@@ -6,29 +6,38 @@
 
         .org 0x0
 reset:
+	dis i
+	dis tcnti
         jmp entry
 
 
         .org 0x10
 entry:
-        mov  A,    #0x0A ; 00001010
+        mov  A,    #0x5F ; 01011111
         outl P2,   A
         call delay
 
-        mov  A,    #0x05 ; 00000101
+        mov  A,    #0xAF ; 10101111
         outl P2,   A
         call delay
 
         jmp  entry       ; repeat main loop
 
 
-delay:  mov  R0, #255   ; init outer loop counter
-delay2: mov  R1, #255   ; init inner loop counter
-delay1:
+delay:
         nop
         nop
         nop
         nop
-        djnz R1, delay1 ; dec inner count, continue if not zero
-        djnz R0, delay2 ; dec outer count, continue if not zero
-        ret             ; return to caller
+        ret
+
+;; delay:
+;; 	mov	r1,#0x255
+;; delay_2:
+;; 	mov	r0,#0x63
+;; delay_1:
+;; 	nop
+;; 	nop
+;; 	djnz	r0,delay_1
+;; 	djnz	r1,delay_2
+;; 	ret
