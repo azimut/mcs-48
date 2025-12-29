@@ -16,4 +16,13 @@ default: blink.rom
 %.rom: %.bin
 	srec_cat $< -binary -crop 0 $(FIRMWARE_END) -fill 0x00 0 $(FIRMWARE_END) -checksum-neg-b-e $(FIRMWARE_END) 1 1 -o $(<:.bin=.rom) -binary
 
+.PHONY: clean
 clean:; rm -vf ./*.sym ./*.lst ./*.rel ./*.hlr ./*.hex ./*.rom
+
+.PHONY: debug
+debug:
+	cp -v ./blink.* ~/Downloads/s48/
+	dosbox -forcescaler normal2x \
+		-c 'MOUNT C ~/Downloads/s48' \
+		-c 'C:' \
+		-c 'S48.COM BLINK.ROM'
