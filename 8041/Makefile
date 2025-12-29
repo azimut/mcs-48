@@ -20,7 +20,7 @@ default: blink.rom
 clean:; rm -vf ./*.sym ./*.lst ./*.rel ./*.hlr ./*.hex ./*.rom
 
 .PHONY: debug
-debug:
+debug: blink.rom
 	cp -v ./blink.* ~/Downloads/s48/
 	dosbox -forcescaler normal2x \
 		-c 'MOUNT C ~/Downloads/s48' \
