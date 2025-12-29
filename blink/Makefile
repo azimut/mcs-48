@@ -1,7 +1,8 @@
 
-FIRMWARE_END=0x3FF
+FIRMWARE_END := 0x3FF
+NAME         := blink
 
-default: blink.rom
+default: $(NAME).rom
 
 # assemble with as8048
 %.hex: %.asm
@@ -19,10 +20,10 @@ default: blink.rom
 .PHONY: clean
 clean:; rm -vf ./*.sym ./*.lst ./*.rel ./*.hlr ./*.hex ./*.rom
 
-.PHONY: debug
-debug: blink.rom
-	cp -v ./blink.* ~/Downloads/s48/
+.PHONY: dosbox
+dosbox: $(NAME).rom
+	cp -v ./$(NAME).* ~/Downloads/s48/
 	dosbox -forcescaler normal2x \
 		-c 'MOUNT C ~/Downloads/s48' \
 		-c 'C:' \
-		-c 'S48.COM BLINK.ROM'
+		-c 'S48.COM $(NAME).ROM'

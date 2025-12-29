@@ -6,8 +6,8 @@
 
         .org 0x0
 reset:
-	dis i
-	dis tcnti
+        dis i
+        dis tcnti
         jmp entry
 
 
@@ -30,14 +30,3 @@ delay:
         nop
         nop
         ret
-
-;; delay:
-;; 	mov	r1,#0x255
-;; delay_2:
-;; 	mov	r0,#0x63
-;; delay_1:
-;; 	nop
-;; 	nop
-;; 	djnz	r0,delay_1
-;; 	djnz	r1,delay_2
-;; 	ret

@@ -1,9 +1,12 @@
 # 8041
 
+Wrote for the [asm48](https://github.com/daveho/asm48) assembler.
+
 ## Reference
 
 - https://hackaday.io/project/161909-8042-clock
 - https://github.com/retiredfeline/8042-clock/
+- [blink.asm](./blink.asm), simple hello world, a slightly modified version of author's [example](https://www.youtube.com/watch?v=K83uTnW6IHU) to alternate output bits in P1
 
 ## Tools used
 
