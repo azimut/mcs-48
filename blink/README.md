@@ -1,4 +1,4 @@
-# 8041
+# blink
 
 Wrote for the [asm48](https://github.com/daveho/asm48) assembler.
 
