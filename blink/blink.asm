@@ -4,24 +4,24 @@
         .endif           ; .__.CPU.
 
 
-        .org 0x0
+        .org 0x00
 reset:
-        dis i
-        dis tcnti
-        jmp entry
+        dis     i
+        dis     tcnti
+        jmp     entry
 
 
         .org 0x10
 entry:
-        mov  A,    #0x5F ; 01011111
-        outl P2,   A
-        call delay
+        mov     a,      #0x5F   ; 01011111
+        outl    p2,     a
+        call    delay
 
-        mov  A,    #0xAF ; 10101111
-        outl P2,   A
-        call delay
+        mov     a,      #0xAF   ; 10101111
+        outl    p2,     a
+        call    delay
 
-        jmp  entry       ; repeat main loop
+        jmp     entry           ; repeat main loop
 
 
 delay:
