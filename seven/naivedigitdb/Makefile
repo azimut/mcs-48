@@ -1,6 +1,6 @@
 
 FIRMWARE_END := 0x3FF
-NAME         := naivedigits
+NAME         := $(notdir $(basename $(shell pwd)))
 
 default: $(NAME).rom
 
