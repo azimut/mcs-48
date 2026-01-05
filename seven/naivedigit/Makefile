@@ -1,6 +1,6 @@
 
 FIRMWARE_END := 0x3FF
-NAME         := seven
+NAME         := naivedigit
 
 default: $(NAME).rom
 
