@@ -5,10 +5,10 @@
 
 
 .equ    maskdisable,    0x00
-.equ    maskenable,     0x20
-.equ    maskclock,      0x40
+.equ    maskenable,     0B10000000
+.equ    maskdata,       0B01000000|maskenable
+.equ    maskclock,      0B00100000
 .equ    maskclocknot,   ~maskclock
-.equ    maskdata,       0x80|maskenable
 
 
         .org 0x0
