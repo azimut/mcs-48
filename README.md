@@ -25,3 +25,5 @@
 - [asxxxx](https://shop-pdp.net/ashtml/asxxxx.php) assembler, since it supports 8041 specifically
 - [hex2bin](https://github.com/algodesigner/hex2bin) to convert intel .hex files to binary
 - [srec_cat](https://srecord.sourceforge.net/man/man1/srec_cat.1.html)
+- [s48](https://www.os2site.com/sw/DEC/emulators/index.html) mcs-48 cpu simulator
+- [dosbox](https://www.dosbox.com/) needed to run s48
