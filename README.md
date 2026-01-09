@@ -6,6 +6,7 @@
 
 - **blink** simple script to make leds blink, using SS (single step) not a clock
 - **seven/** scripts to use with 7-segment displays, controlled by a `SDA2131`
+  - **/digit** hardcoded alternating 16bit pattern
   - **/rdigit** hardcoded single digit
   - **/rdigitdb** hardcoded single digit lookup
   - **/counter** real single digit lookup
