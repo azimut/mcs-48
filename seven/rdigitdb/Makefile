@@ -26,7 +26,7 @@ clean:; rm -vf ./*.sym ./*.lst ./*.rel ./*.hlr ./*.hex ./*.rom
 
 .PHONY: dosbox
 dosbox: $(NAME).rom
-	cp -v ./$(NAME).* ~/Downloads/s48/
+	cp -v ./$(NAME).rom ~/Downloads/s48/
 	dosbox -forcescaler normal2x \
 		-c 'MOUNT C ~/Downloads/s48' \
 		-c 'C:' \
