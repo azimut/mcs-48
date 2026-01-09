@@ -5,38 +5,30 @@
 
 
 .equ    maskdisable,    0x00
-.equ    maskenable,     0x20
-.equ    maskclock,      0x40
-.equ    maskclocknot,   ~maskclock
-.equ    maskdata,       0x80|maskenable
+.equ    maskenable,     0B10000000
+.equ    maskdata,       0B01000000
+.equ    maskclock,      0B00100000
 
 
         .org 0x0
 reset:
-        dis     i
-        dis     tcnti
         jmp     main
 
 
         .org 0x10
 main:
-        mov     r1,     #10
-        call    sendnumber
-        call    delay
-
+        dis     i
+        dis     tcnti
+        mov     r1,     #0
+loop:
         inc     r1
         call    sendnumber
-        call    delay
-
-        inc     r1
-        call    sendnumber
-        call    delay
-
-        jmp     main
+        jmp     loop
 
 
 sendnumber:                             ; INPUT(R1)
-        mov     a,      #maskenable     ; ENABLE=ON
+        anl     p2,     #0              ; P2 = 0x00
+        mov     a,      #maskenable     ; ENABLE = ON
         outl    p2,     a
 
         mov     a,      r1              ;  A = R1
@@ -56,40 +48,47 @@ sendnumber:                             ; INPUT(R1)
         mov     r0,     a
         call    sendsegment
 
-        mov     a,      #maskdisable    ; ENABLE=OFF
+        mov     a,      #maskdisable    ; ENABLE = OFF
         outl    p2,     a
+        ret
 
-
-sendsegment:                            ; INPUT(R0)
-        mov     r5,     #0x08           ; init loop counter
-datasend:
-        mov     a,      r0
+sendsegment:
+        mov     r7,     #8              ; R7 = init loop counter
+        mov     a,      r0              ; R0 = input segment
+        mov     r6,     a               ; R6 = working variable for input R0 segment
+send:
+        mov     a,      r6
         anl     a,      #0x01
-        jnz     dataon
-dataoff:
-        mov     a,      #maskenable
-        outl    p2,     a
-        jmp     dataclock
-dataon: mov     a,      #maskdata
-        outl    p2,     a
-dataclock:
-        anl     a,      #maskclock
-        outl    p2,     a
-        anl     a,      #maskclocknot
-        outl    p2,     a
-        mov     a,      r0             ; shift data
+        jnz     one
+zero:
+        call    datazero
+        jmp     eof
+one:
+        call    dataone
+eof:
+        mov     a,      r6              ; shift data
         rr      a
-        mov     r0,     a
-        djnz    r5,     datasend       ; end loop?
-dataeof:
+        mov     r6,     a
+        djnz    r7,     send            ; end loop?
         ret
 
 
-delay:
-        nop
-        nop
-        nop
-        nop
+dataone:
+        mov     a,      #(maskenable|maskdata)
+        outl    p2,     a
+        mov     a,      #(maskenable|maskclock)
+        outl    p2,     a
+        mov     a,      #(maskenable|maskdata)
+        outl    p2,     a
+        ret
+
+datazero:
+        mov     a,      #(maskenable)
+        outl    p2,     a
+        mov     a,      #(maskenable|maskclock)
+        outl    p2,     a
+        mov     a,      #(maskenable)
+        outl    p2,     a
         ret
 
 
