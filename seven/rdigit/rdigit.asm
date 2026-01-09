@@ -6,9 +6,8 @@
 
 .equ    maskdisable,    0x00
 .equ    maskenable,     0B10000000
-.equ    maskdata,       0B01000000|maskenable
+.equ    maskdata,       0B01000000
 .equ    maskclock,      0B00100000
-.equ    maskclocknot,   ~maskclock
 
 .equ    numberzero,     0B10110111
 .equ    numberone,      0B00100100
@@ -23,7 +22,6 @@ reset:
 main:
         dis     i
         dis     tcnti
-        call    limpiar
 loop:
         mov     r0,     #numberzero
         call    sendsegments
@@ -34,14 +32,8 @@ loop:
         jmp     loop
 
 
-limpiar:
-        anl     p2,     #0              ; P2 = 0x00
-        orl     p2,     #maskenable     ; ENABLE = ON
-        anl     p2,     #maskdisable    ; ENABLE = OFF
-        ret
-
-
 sendsegments:
+        anl     p2,     #0              ; P2 = 0x00
         mov     a,      #maskenable     ; ENABLE = ON
         outl    p2,     a
         call    sendsegment
@@ -52,26 +44,38 @@ sendsegments:
 
 
 sendsegment:
-        mov     r5,     #8             ; R5 = init loop counter
-datasend:
+        mov     r5,     #8              ; R5 = init loop counter
+send:
         mov     a,      r0
         anl     a,      #0x01
-        jnz     dataon
-dataoff:
-        mov     a,      #maskenable
-        outl    p2,     a
-        jmp     dataclock
-dataon:
-        mov     a,      #maskdata
-        outl    p2,     a
-dataclock:
-        anl     a,      #maskclock
-        outl    p2,     a
-        anl     a,      #maskclocknot
-        outl    p2,     a
-        mov     a,      r0             ; shift data
+        jnz     one
+zero:
+        call    datazero
+        jmp     eof
+one:
+        call    dataone
+eof:
+        mov     a,      r0              ; shift data
         rr      a
         mov     r0,     a
-        djnz    r5,     datasend       ; end loop?
-dataeof:
+        djnz    r5,     send            ; end loop?
+        ret
+
+
+dataone:
+        mov     a,      #(maskenable|maskdata)
+        outl    p2,     a
+        mov     a,      #(maskenable|maskclock)
+        outl    p2,     a
+        mov     a,      #(maskenable|maskdata)
+        outl    p2,     a
+        ret
+
+datazero:
+        mov     a,      #(maskenable)
+        outl    p2,     a
+        mov     a,      #(maskenable|maskclock)
+        outl    p2,     a
+        mov     a,      #(maskenable)
+        outl    p2,     a
         ret
