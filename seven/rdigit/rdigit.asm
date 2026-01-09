@@ -16,28 +16,43 @@
 
         .org 0x0
 reset:
-        dis     i
-        dis     tcnti
         jmp     main
 
 
         .org 0x10
 main:
+        dis     i
+        dis     tcnti
+        call    limpiar
+loop:
         mov     r0,     #numberzero
-        call    sendsegment
-        call    delay
+        call    sendsegments
 
         mov     r0,     #numberone
-        call    sendsegment
-        call    delay
+        call    sendsegments
 
-        jmp     main
+        jmp     loop
+
+
+limpiar:
+        anl     p2,     #0              ; P2 = 0x00
+        orl     p2,     #maskenable     ; ENABLE = ON
+        anl     p2,     #maskdisable    ; ENABLE = OFF
+        ret
+
+
+sendsegments:
+        mov     a,      #maskenable     ; ENABLE = ON
+        outl    p2,     a
+        call    sendsegment
+        call    sendsegment
+        mov     a,      #maskdisable    ; ENABLE = OFF
+        outl    p2,     a
+        ret
 
 
 sendsegment:
-        mov     a,      #maskenable    ; ENABLE=ON
-        outl    p2,     a
-        mov     r5,     #8             ; init loop counter
+        mov     r5,     #8             ; R5 = init loop counter
 datasend:
         mov     a,      r0
         anl     a,      #0x01
@@ -59,14 +74,4 @@ dataclock:
         mov     r0,     a
         djnz    r5,     datasend       ; end loop?
 dataeof:
-        mov     a,      #maskdisable   ; ENABLE=OFF
-        outl    p2,     a
-        ret
-
-
-delay:
-        nop
-        nop
-        nop
-        nop
         ret
