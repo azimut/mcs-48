@@ -19,9 +19,9 @@ reset:
 main:
         dis     i
         dis     tcnti
-        mov     r1,     #0
+        mov     r1,     #0      ; R1 = 0
 loop:
-        inc     r1
+        inc     r1              ; R1 = R1 + 1
         call    sendnumber
         jmp     loop
 

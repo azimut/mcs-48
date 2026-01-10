@@ -1,7 +1,7 @@
-        .ifdef  .__.CPU. ; if we are using as8048 this is defined
-        .8041
-        .area   CODE    (ABS)
-        .endif           ; .__.CPU.
+.ifdef  .__.CPU. ; if we are using as8048 this is defined
+.8041
+.area   CODE    (ABS)
+.endif           ; .__.CPU.
 
 
         .org 0x00
