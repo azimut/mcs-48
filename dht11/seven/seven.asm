@@ -75,11 +75,11 @@ idlehigh:
 ;;; --------DATA TRANSFER----------------------
 
 rdata:
-        mov     r7,     #5              ; R7 = counter - reads 5 bytes
-        mov     r0,     #raddr          ; R0 = pointer where to write
+        mov     r7,     #5              ; R7 = byte counter
+        mov     r0,     #raddr          ; R0 = byte pointer
 rbyte:
         mov     r6,     #8              ; R6 = counter - reads 8 bits
-        mov     r5,     #0x00           ; R5 = result byte (temporary storage)
+        mov     r5,     #0x00           ; R5 = byte result (temporary storage)
 rbit:
 
         mov     r3,     #10             ; R3 = nr of retries
@@ -166,16 +166,12 @@ loop:
 
 initram:
         mov     a,      #0x00
-        mov     r0,     #rhumidity
+        mov     r0,     #raddr
+        mov     r7,     #5
+ramloop:
         mov     @r0,    a
-        mov     r0,     #rhumidity+1
-        mov     @r0,    a
-        mov     r0,     #rtemperature
-        mov     @r0,    a
-        mov     r0,     #rtemperature+1
-        mov     @r0,    a
-        mov     r0,     #rchecksum
-        mov     @r0,    a
+        inc     r0
+        djnz    r7,     ramloop
         ret
 
 sendnumber:                             ; INPUT(R1)
@@ -257,7 +253,7 @@ segments:
         .byte #0B11110110       ; 9 0xF6
 
 
-delay:                          ; = 1.515ms
-        mov     r7,     #200    ; 3.75 * 2
-        djnz    r7,     .       ; 3.75 * 2 * 200 = 1.5ms
+delay:                          ; = 1.927ms
+        mov     r7,     #255    ; 3.75 * 2
+        djnz    r7,     .       ; 3.75 * 2 * 255 = 1.912ms
         ret                     ; 3.75 * 2
