@@ -23,6 +23,7 @@ main:
 loop:
         inc     r1              ; R1 = R1 + 1
         call    sendnumber
+        call    delay
         jmp     loop
 
 
@@ -103,3 +104,11 @@ segments:
         .byte #0B10110100       ; 7 0xB4
         .byte #0B11110111       ; 8 0xF7
         .byte #0B11110110       ; 9 0xF6
+
+
+delay:                          ; = 1.515ms
+        mov     r6,     #255
+        mov     r7,     #255
+        djnz    r7,     .
+        djnz    r6,     .-4
+        ret
