@@ -13,7 +13,7 @@
 
 ## Makefile targets
 
-- **<NAME>.h** generates a snippet to be copied into an arduino sketch with the parsed output of `hexdump -C` of an output `.bin`
+- **<NAME>.h** generates a snippet to be copied into an arduino sketch with the parsed output of `hexdump -vC` of an output `.bin`
 
 ## References
 
