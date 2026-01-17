@@ -32,23 +32,22 @@ interrupt:
 	.org 0x07
 timer:
         sel     rb1
-        mov     r2,     a       ; R2 = save A
+        stop    tcnt
+        mov     r2,     a               ; R2 = save A
 
 startup:
-        anl     p2,     #dht11pinnot    ; PULL DOWN dht11 data
-        mov     r6,     #10             ;  1.8ms  * 10      = 18ms
-        mov     r7,     #240            ;  3.75us * 2 * 240 = 1.8ms
-        djnz    r7,     .
-        djnz    r6,     .-4
+        anl     p2,     #dht11pinnot    ; PULL DOWN dht11 data = 18.907 ms
+        mov     r6,     #10             ;  mov             =  7.50 u
+        mov     r7,     #250            ;  mov * 10        = 75.00 u
+        djnz    r7,     .               ;  djnz * 250 * 10 = 18.75 m
+        djnz    r6,     .-4             ;  djnz * 10       = 75.00 u
 
         orl     p2,     #dht11pin       ; PULL UP   dht11 data
-        mov     r7,     #2              ; 3.75us * 2 +
-        djnz    r7,     .               ; 3.75us * 2 * 2 = 22.5us
 
 ;;; ---------DHT RESPONSE---------------------
 
 waitlow:
-        mov     r7,     #2              ; 2 * (2+2+2+2) * 3.75us = 60us
+        mov     r7,     #3
 trylow:
         in      a,      p2
         anl     a,      #dht11pin
@@ -56,12 +55,13 @@ trylow:
         djnz    r7,     trylow          ; try again
         jmp     startup                 ; ... start over
 idlelow:
-        mov     r7,     #11             ; 3.75us * 2 * 11 = 82.5us
-        djnz    r7,     .
+        ;; orl     p2,     #dht11pin       ; PULL UP quasi for next read
+        mov     r7,     #5              ; anl+jz+orl+mov = 30
+        djnz    r7,     .               ; djnz*6         = 37.5 + 7.5
 
 
 waitup:
-        mov     r7,     #2              ; 2 * (2+2+2+2) * 3.75us = 60us
+        mov     r7,     #3              ; 30 + 37.5 + mov = 75us
 tryhigh:
         in      a,      p2
         anl     a,      #dht11pin
@@ -69,20 +69,19 @@ tryhigh:
         djnz    r7,     tryhigh         ; try again
         jmp     startup                 ; ... start over
 idlehigh:
-        mov     r7,     #11             ; 3.75 * 2 * 11 = 82.5us
-        djnz    r7,     .
+        mov     r7,     #2              ; anl+jz+mov = 22.5
+        djnz    r7,     .               ; djnz*2     = 15.0
 
 ;;; --------DATA TRANSFER----------------------
 
-rdata:
+rdata:                                  ; 22.5 + 15 + mov*5 = 75
         mov     r7,     #5              ; R7 = byte counter
         mov     r0,     #raddr          ; R0 = byte pointer
 rbyte:
         mov     r6,     #8              ; R6 = counter - reads 8 bits
         mov     r5,     #0x00           ; R5 = byte result (temporary storage)
 rbit:
-
-        mov     r3,     #10             ; R3 = nr of retries
+        mov     r3,     #3              ; R3 = nr of retries
 lowwait:
         in      a,      p2
         anl     a,      #dht11pin
@@ -90,31 +89,27 @@ lowwait:
         djnz    r3,     lowwait         ; else retry
         jmp     startup                 ; abort
 lowdelay:
-        mov     r0,     #5              ; 3.75 * 2
-        djnz    r0,     .               ; 3.75 * 2 * 5 = 45us
-
+        nop                             ; anl+jz        = 15
+        nop                             ; 7.5 + nop*3   = 26.25
+        nop                             ; 26.25 + mov*2 = 41.25
 
         mov     r4,     #0x00           ; R4 = elapsed time counter, bit cutoff
         mov     r3,     #10             ; R3 = retries
 highwait:
         in      a,      p2
         anl     a,      #dht11pin
-        jnz     highcount
-        djnz    r3,     highwait
+        jnz     highwait
+        djnz    r3,     highidle
         jmp     startup
-highcount:                              ; = 26.25u
-        inc     r4                      ; 3.75
-        in      a,      p2              ; 3.75 * 2
-        anl     a,      #dht11pin       ; 3.75 * 2
-        jnz     highcount               ; 3.75 * 2
-
-
-choosebit:
-        mov     a,      #3              ; r4<3 is 0
-        cpl     a
-        add     a,      #1
-        add     a,      r4
-        jnc     addzero
+highidle:
+        nop                             ; anl+jnz = 15
+        nop                             ; nop*5   = 18.5
+        nop                             ; 15 + 18.5 = 33
+        nop
+        nop
+        in      a,      p2
+        anl     a,      #dht11pin
+        jz      addzero
 addone:
         mov     a,      r5
         rl      a
@@ -137,42 +132,86 @@ endbit:
 holdline:
         orl     p2,     #dht11pin       ; hold DHT11 data line UP
 
+;;; ------------------------------
+
 	mov	a, #0x0F        ; restart timer
 	mov	t, a
 	strt	t
         mov     a,      r2      ; R2 = restore A
+
 	retr
 
 ;;; ========================================
 
-        ;; .org 0x100
+        .org 0x100
 main:
         clr     f0
         sel     rb0
-	mov	a, #0x0F         ; restart timer
+	mov	a, #0xF0         ; restart timer
 	mov	t, a
 	strt	t
         en      tcnti
+        ;; dis     tcnti
         dis     i
         call    initram
 loop:
-        mov     r0,     #rtemperature
+        mov     r0,     #raddr+4
         mov     a,      @r0
         mov     r1,     a
         call    sendnumber
         call    delay
+        call    delay
+
+        mov     r0,     #raddr+3
+        mov     a,      @r0
+        mov     r1,     a
+        call    sendnumber
+        call    delay
+        call    delay
+
+        mov     r0,     #raddr+2
+        mov     a,      @r0
+        mov     r1,     a
+        call    sendnumber
+        call    delay
+        call    delay
+
+        mov     r0,     #raddr+1
+        mov     a,      @r0
+        mov     r1,     a
+        call    sendnumber
+        call    delay
+        call    delay
+
+        mov     r0,     #raddr+0
+        mov     a,      @r0
+        mov     r1,     a
+        call    sendnumber
+        call    delay
+        call    delay
+
+        mov     a,      #99             ; aka "63"
+        mov     r1,     a
+        call    sendnumber
+        call    delay
+        call    delay
+        call    delay
+        call    delay
+
         jmp     loop
 
 
 initram:
-        mov     a,      #0x00
-        mov     r0,     #raddr
-        mov     r7,     #5
+        mov     a,      #0x00           ;  A = value
+        mov     r0,     #raddr          ; R0 = address BASE
+        mov     r7,     #5              ; R7 = address OFFSET
 ramloop:
+        inc     a
         mov     @r0,    a
         inc     r0
         djnz    r7,     ramloop
         ret
+
 
 sendnumber:                             ; INPUT(R1)
         anl     p2,     #0              ; P2 = 0x00
@@ -199,6 +238,7 @@ sendnumber:                             ; INPUT(R1)
         mov     a,      #maskdisable    ; ENABLE = OFF
         outl    p2,     a
         ret
+
 
 sendsegment:
         mov     r7,     #8              ; R7 = init loop counter
@@ -240,6 +280,13 @@ datazero:
         ret
 
 
+delay:
+        mov     r6,     #255
+        mov     r7,     #255
+        djnz    r7,     .       ; 3.75 * 2 * 255 =   1.9125 ms
+        djnz    r6,     .-4     ; 1.9125ms * 255 = 487.6875 ms
+        ret
+
 segments:
         .byte #0B10110111       ; 0 0xB7
         .byte #0B00100100       ; 1 0x24
@@ -251,9 +298,3 @@ segments:
         .byte #0B10110100       ; 7 0xB4
         .byte #0B11110111       ; 8 0xF7
         .byte #0B11110110       ; 9 0xF6
-
-
-delay:                          ; = 1.927ms
-        mov     r7,     #255    ; 3.75 * 2
-        djnz    r7,     .       ; 3.75 * 2 * 255 = 1.912ms
-        ret                     ; 3.75 * 2
