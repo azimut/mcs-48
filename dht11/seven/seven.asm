@@ -3,6 +3,12 @@
 .area   CODE    (ABS)
 .endif           ; .__.CPU.
 
+.equ    idleseparator,  7
+
+.equ    erroracklow,    0x04
+.equ    errorackhigh,   0x03
+.equ    errordatalow,   0x02
+.equ    errordatahigh,  0x01
 
 .equ    maskdisable,    0x00
 .equ    maskenable,     0B10000000
@@ -31,94 +37,115 @@ interrupt:
 
 	.org 0x07
 timer:
+        retr
+
+timerroutine:
         sel     rb1
         stop    tcnt
         mov     r2,     a               ; R2 = save A
 
 startup:
-        anl     p2,     #dht11pinnot    ; PULL DOWN dht11 data = 18.907 ms
+
+        anl     p2,     #dht11pinnot    ; PULL DOWN dht11 data = 18.1575 ms
         mov     r6,     #10             ;  mov             =  7.50 u
         mov     r7,     #250            ;  mov * 10        = 75.00 u
-        djnz    r7,     .               ;  djnz * 250 * 10 = 18.75 m
+        djnz    r7,     .               ;  djnz * 240 * 10 = 18.00 m
         djnz    r6,     .-4             ;  djnz * 10       = 75.00 u
 
-        orl     p2,     #dht11pin       ; PULL UP   dht11 data
+        orl     p2,     #dht11pin       ; PULL UP   dht11 data (also set as input?)
+        nop                             ; nop*4 = 15 us
+        nop
+        nop
+        nop
 
-;;; ---------DHT RESPONSE---------------------
+;;; ---------DHT ACK---------------------
+;;; R7 = nr of retries OR idle loop
 
 waitlow:
-        mov     r7,     #3
+        mov     r7,     #5              ; 15 + mov = 22.5 us
 trylow:
         in      a,      p2
         anl     a,      #dht11pin
         jz      idlelow                 ; got LOW, time to move on
         djnz    r7,     trylow          ; try again
-        jmp     startup                 ; ... start over
+        mov     r0,     #raddr
+        mov     @r0,    #erroracklow
+        jmp     holdline                ; ... give up
 idlelow:
-        ;; orl     p2,     #dht11pin       ; PULL UP quasi for next read
-        mov     r7,     #5              ; anl+jz+orl+mov = 30
-        djnz    r7,     .               ; djnz*6         = 37.5 + 7.5
+        mov     r7,     #7              ; anl+jz+mov = 22.5 us
+        djnz    r7,     .               ; djnz*7     = 52.5 us
 
 
 waitup:
-        mov     r7,     #3              ; 30 + 37.5 + mov = 75us
+        mov     r7,     #3              ; 52.5 + 22.5 + mov = 82.5 us
+        orl     p2,     #dht11pin       ; PULL UP for INPUT
 tryhigh:
         in      a,      p2
         anl     a,      #dht11pin
         jnz     idlehigh                ; got HIGH, time to move on
         djnz    r7,     tryhigh         ; try again
-        jmp     startup                 ; ... start over
+        mov     r0,     #raddr+1
+        mov     @r0,    #errorackhigh
+        jmp     holdline                 ; ... give up
 idlehigh:
-        mov     r7,     #2              ; anl+jz+mov = 22.5
-        djnz    r7,     .               ; djnz*2     = 15.0
+        mov     r7,     #3              ; anl+jz+mov = 22.5 us
+        djnz    r7,     .               ; djnz*3     = 22.5 us
 
-;;; --------DATA TRANSFER----------------------
+;;; --------DHT DATA TRANSFER----------------------
+;;; R0 = byte POINTER
+;;; R7 = byte COUNTER
+;;; R6 = bits COUNTER
+;;; R5 = byte RESULT (temporary storage)
+;;; R3 = nr of retries
 
-rdata:                                  ; 22.5 + 15 + mov*5 = 75
-        mov     r7,     #5              ; R7 = byte counter
-        mov     r0,     #raddr          ; R0 = byte pointer
+rdata:
+        mov     r7,     #5
+        mov     r0,     #raddr
 rbyte:
-        mov     r6,     #8              ; R6 = counter - reads 8 bits
-        mov     r5,     #0x00           ; R5 = byte result (temporary storage)
+        mov     r6,     #8
+        mov     r5,     #0x00
 rbit:
-        mov     r3,     #3              ; R3 = nr of retries
-lowwait:
+        mov     r3,     #3
+lowwait:                                ; 22.5*2 + MOV*5 = 82.5 us
         in      a,      p2
         anl     a,      #dht11pin
-        jz      lowdelay                ; if got LOW, move on
-        djnz    r3,     lowwait         ; else retry
-        jmp     startup                 ; abort
+        jz      lowdelay                ; got LOW, time to move on
+        djnz    r3,     lowwait         ; try again
+        mov     r0,     #raddr+2
+        mov     @r0,    #errordatalow
+        jmp     holdline                 ; ... start over
 lowdelay:
-        nop                             ; anl+jz        = 15
-        nop                             ; 7.5 + nop*3   = 26.25
-        nop                             ; 26.25 + mov*2 = 41.25
+        mov     r3,     #2              ; anl+jz+mov = 22.5 us
+        djnz    r3,     .               ; djnz*2     = 15.0 us
 
-        mov     r4,     #0x00           ; R4 = elapsed time counter, bit cutoff
-        mov     r3,     #10             ; R3 = retries
+        mov     r3,     #3              ; 22.5+15 + mov = 45 us
+        orl     p2,     #dht11pin       ; PULL UP   dht11 data (also set as input?)
 highwait:
         in      a,      p2
         anl     a,      #dht11pin
-        jnz     highwait
-        djnz    r3,     highidle
-        jmp     startup
+        jnz     highidle                ; got HIGH
+        djnz    r3,     highwait        ; try gain
+        mov     r0,     #raddr+3
+        mov     @r0,    #errordatahigh
+        jmp     holdline                ; ... give up
 highidle:
-        nop                             ; anl+jnz = 15
-        nop                             ; nop*5   = 18.5
-        nop                             ; 15 + 18.5 = 33
+        nop                             ; anl+jnz   = 15
+        nop                             ; nop*5     = 18.75
+        nop                             ; 15 + 18.5 = 33.75
         nop
         nop
         in      a,      p2
         anl     a,      #dht11pin
-        jz      addzero
-addone:
+        jz      iszero
+isone:
+        clr     c
+        cpl     c
+        jmp     addit
+iszero:
+        clr     c
+addit:
         mov     a,      r5
-        rl      a
-        orl     a,      #0x01
-        mov     r5,     a
-        jmp     endbit
-addzero:
-        mov     a,      r5
-        rl      a
+        rlc     a
         mov     r5,     a
 endbit:
         djnz    r6,     rbit
@@ -134,27 +161,31 @@ holdline:
 
 ;;; ------------------------------
 
-	mov	a, #0x0F        ; restart timer
-	mov	t, a
-	strt	t
+	;; mov	a, #0x0F        ; restart timer
+	;; mov	t, a
+	;; strt	t
         mov     a,      r2      ; R2 = restore A
 
-	retr
+	;; retr
+        ret
 
 ;;; ========================================
 
         .org 0x100
 main:
-        clr     f0
         sel     rb0
-	mov	a, #0xF0         ; restart timer
-	mov	t, a
-	strt	t
-        en      tcnti
-        ;; dis     tcnti
+	;; mov	a, #0xF0         ; restart timer
+	;; mov	t, a
+	;; strt	t
+        ;; en      tcnti
+        dis     tcnti
         dis     i
         call    initram
+
 loop:
+        call    initram
+        call    timerroutine
+
         mov     r0,     #raddr+4
         mov     a,      @r0
         mov     r1,     a
@@ -190,7 +221,7 @@ loop:
         call    delay
         call    delay
 
-        mov     a,      #99             ; aka "63"
+        mov     a,      #idleseparator
         mov     r1,     a
         call    sendnumber
         call    delay
@@ -213,14 +244,14 @@ ramloop:
         ret
 
 
-sendnumber:                             ; INPUT(R1)
-        anl     p2,     #0              ; P2 = 0x00
-        mov     a,      #maskenable     ; ENABLE = ON
+sendnumber:                                     ; INPUT(R1)
+        anl     p2,     #(dht11pin|maskdisable) ; P2     = 0x00
+        mov     a,      #(dht11pin|maskenable)  ; ENABLE = ON
         outl    p2,     a
 
-        mov     a,      r1              ;  A = R1
-        da      a                       ; da(A)
-        mov     r2,     a               ; R2 = A
+        mov     a,      r1                      ; A  = R1
+        da      a                               ; da(A)
+        mov     r2,     a                       ; R2 = A
         anl     a,      #0x0F
         add     a,      #segments
         movp    a,      @a
@@ -235,7 +266,7 @@ sendnumber:                             ; INPUT(R1)
         mov     r0,     a
         call    sendsegment
 
-        mov     a,      #maskdisable    ; ENABLE = OFF
+        mov     a,      #(dht11pin|maskdisable) ; ENABLE = OFF
         outl    p2,     a
         ret
 
@@ -262,20 +293,20 @@ eof:
 
 
 dataone:
-        mov     a,      #(maskenable|maskdata)
+        mov     a,      #(dht11pin|maskenable|maskdata)
         outl    p2,     a
-        mov     a,      #(maskenable|maskclock)
+        mov     a,      #(dht11pin|maskenable|maskclock)
         outl    p2,     a
-        mov     a,      #(maskenable|maskdata)
+        mov     a,      #(dht11pin|maskenable|maskdata)
         outl    p2,     a
         ret
 
 datazero:
-        mov     a,      #(maskenable)
+        mov     a,      #(dht11pin|maskenable)
         outl    p2,     a
-        mov     a,      #(maskenable|maskclock)
+        mov     a,      #(dht11pin|maskenable|maskclock)
         outl    p2,     a
-        mov     a,      #(maskenable)
+        mov     a,      #(dht11pin|maskenable)
         outl    p2,     a
         ret
 
