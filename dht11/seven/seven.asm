@@ -42,7 +42,9 @@ timer:
 timerroutine:
         sel     rb1
         stop    tcnt
-        mov     r2,     a               ; R2 = save A
+        ;; mov     r2,     a               ; R2 = save A
+        mov     r0,     #raddr
+        mov     r4,     #5
 
 startup:
 
@@ -62,7 +64,7 @@ startup:
 ;;; R7 = nr of retries OR idle loop
 
 waitlow:
-        mov     r7,     #5              ; 15 + mov = 22.5 us
+        mov     r7,     #10              ; 15 + mov = 22.5 us
 trylow:
         in      a,      p2
         anl     a,      #dht11pin
@@ -72,13 +74,13 @@ trylow:
         mov     @r0,    #erroracklow
         jmp     holdline                ; ... give up
 idlelow:
-        mov     r7,     #7              ; anl+jz+mov = 22.5 us
-        djnz    r7,     .               ; djnz*7     = 52.5 us
+        ;; mov     r7,     #7              ; anl+jz+mov = 22.5 us
+        ;; djnz    r7,     .               ; djnz*7     = 52.5 us
 
 
 waitup:
-        mov     r7,     #3              ; 52.5 + 22.5 + mov = 82.5 us
-        orl     p2,     #dht11pin       ; PULL UP for INPUT
+        mov     r7,     #10              ; 52.5 + 22.5 + mov = 82.5 us
+        ;; orl     p2,     #dht11pin       ; PULL UP for INPUT
 tryhigh:
         in      a,      p2
         anl     a,      #dht11pin
@@ -88,25 +90,22 @@ tryhigh:
         mov     @r0,    #errorackhigh
         jmp     holdline                 ; ... give up
 idlehigh:
-        mov     r7,     #3              ; anl+jz+mov = 22.5 us
-        djnz    r7,     .               ; djnz*3     = 22.5 us
+        ;; mov     r7,     #5              ; anl+jz+mov = 22.5 us
+        ;; djnz    r7,     .               ; djnz*5     = 37.5 us
 
 ;;; --------DHT DATA TRANSFER----------------------
 ;;; R0 = byte POINTER
-;;; R7 = byte COUNTER
-;;; R6 = bits COUNTER
 ;;; R5 = byte RESULT (temporary storage)
+;;; R4 = byte COUNTER
+;;; R6 = bits COUNTER
 ;;; R3 = nr of retries
 
-rdata:
-        mov     r7,     #5
-        mov     r0,     #raddr
 rbyte:
         mov     r6,     #8
-        mov     r5,     #0x00
 rbit:
-        mov     r3,     #3
-lowwait:                                ; 22.5*2 + MOV*5 = 82.5 us
+        mov     r3,     #10
+        orl     p2,     #dht11pin       ; PULL UP dht11 (also set as input?)
+lowwait:                                ; 22.5 + 37.5 + orl + MOV*2 = 82.5 us
         in      a,      p2
         anl     a,      #dht11pin
         jz      lowdelay                ; got LOW, time to move on
@@ -115,11 +114,11 @@ lowwait:                                ; 22.5*2 + MOV*5 = 82.5 us
         mov     @r0,    #errordatalow
         jmp     holdline                 ; ... start over
 lowdelay:
-        mov     r3,     #2              ; anl+jz+mov = 22.5 us
-        djnz    r3,     .               ; djnz*2     = 15.0 us
+        ;; mov     r3,     #2              ; anl+jz+mov = 22.5 us
+        ;; djnz    r3,     .               ; djnz*2     = 15 us
 
-        mov     r3,     #3              ; 22.5+15 + mov = 45 us
-        orl     p2,     #dht11pin       ; PULL UP   dht11 data (also set as input?)
+        mov     r3,     #10              ; 22.5 + 15 + mov = 45 us
+        orl     p2,     #dht11pin       ; PULL UP dht11 (also set as input?)
 highwait:
         in      a,      p2
         anl     a,      #dht11pin
@@ -134,25 +133,23 @@ highidle:
         nop                             ; 15 + 18.5 = 33.75
         nop
         nop
+        orl     p2,     #dht11pin       ; PULL UP dht11 data (also set as input?)
         in      a,      p2
         anl     a,      #dht11pin
-        jz      iszero
-isone:
         clr     c
+        jz      shiftit
+isone:                                  ; cpl             = 3.75
         cpl     c
-        jmp     addit
-iszero:
-        clr     c
-addit:
+shiftit:                                ; movi + rlc + movi = 11.25
         mov     a,      r5
         rlc     a
         mov     r5,     a
-endbit:
+endbit:                                 ; djnz + movi + movi + inc + djnz = 26.25
         djnz    r6,     rbit
-        mov     a,      r5
-        mov     @r0,    a        ; store byte
-        inc     r0               ; advance RAM pointer
-        djnz    r7,     rbyte
+        mov     a,      r5              ; store byte in A
+        mov     @r0,    a               ; store byte in RAM
+        inc     r0                      ; increase RAM pointer
+        djnz    r4,     rbyte           ; process next byte
 
 ;;; ------------------------------
 
@@ -164,7 +161,7 @@ holdline:
 	;; mov	a, #0x0F        ; restart timer
 	;; mov	t, a
 	;; strt	t
-        mov     a,      r2      ; R2 = restore A
+        ;; mov     a,      r2      ; R2 = restore A
 
 	;; retr
         ret
