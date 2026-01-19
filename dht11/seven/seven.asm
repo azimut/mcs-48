@@ -92,53 +92,45 @@ idlehigh:
 
 ;;; --------DHT DATA TRANSFER----------------------
 ;;; R0 = byte POINTER
-;;; R5 = byte RESULT (temporary storage)
 ;;; R4 = byte COUNTER
+;;; R5 = byte RESULT (temporary storage)
 ;;; R6 = bits COUNTER
-;;; R3 = nr of retries
 
         mov     r0,     #raddr
         mov     r4,     #5
         orl     p2,     #dht11pin       ; PULL UP dht11 (also set as input?)
-
 rbyte:
         mov     r6,     #8
 rbit:
-        ;; orl     p2,     #dht11pin       ; PULL UP dht11 (also set as input?)
-lowwait:                                ; 22.5 + 37.5 + orl + MOV*2 = 82.5 us
         in      a,      p2
-        jb4     lowwait
-        ;; orl     p2,     #dht11pin       ; PULL UP dht11 (also set as input?)
+        jb4     rbit                    ; loop until LOW
 highwait:
         in      a,      p2
-        jb4     highidle
+        jb4     highidle                ; loop until HIGH
         jmp     highwait
 highidle:
         nop
         nop
         nop
         nop
-
         nop
         nop
         nop
         nop
-
         nop
-        nop
-
-        ;; orl     p2,     #dht11pin       ; PULL UP dht11 (also set as input?)
-        in      a,      p2
+        nop                             ; nop * 10   = 21.099
         clr     c
-        jb4     isone
-        jmp     shiftit
-isone:                                  ; cpl             = 3.75
-        cpl     c
-shiftit:                                ; movi + rlc + movi = 11.25
+        cpl     c                       ; clr + cpl = 4.21
+
+        in      a,      p2
+
+        jb4     shiftit
+        clr     c
+shiftit:                                ; movi*2 + rlc = 6.32
         mov     a,      r5
         rlc     a
         mov     r5,     a
-endbit:                                 ; djnz + movi + movi + inc + djnz = 26.25
+endbit:                                 ; djnz*2 + movi*2 + inc  = 14.76
         djnz    r6,     rbit
         mov     a,      r5              ; store byte in A
         mov     @r0,    a               ; store byte in RAM
