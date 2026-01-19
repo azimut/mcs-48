@@ -43,22 +43,19 @@ timerroutine:
         sel     rb1
         stop    tcnt
         ;; mov     r2,     a               ; R2 = save A
-        mov     r0,     #raddr
-        mov     r4,     #5
 
 startup:
 
-        anl     p2,     #dht11pinnot    ; PULL DOWN dht11 data = 18.1575 ms
-        mov     r6,     #10             ;  mov             =  7.50 u
-        mov     r7,     #250            ;  mov * 10        = 75.00 u
-        djnz    r7,     .               ;  djnz * 240 * 10 = 18.00 m
-        djnz    r6,     .-4             ;  djnz * 10       = 75.00 u
+        anl     p2,     #dht11pinnot    ; PULL DOWN dht11 data = 18.44 ms
+        mov     r6,     #17             ;  mov
+        mov     r7,     #255            ;  mov * 10
+        djnz    r7,     .               ;  djnz * 240 * 10
+        djnz    r6,     .-4             ;  djnz * 10
 
         orl     p2,     #dht11pin       ; PULL UP   dht11 data (also set as input?)
-        nop                             ; nop*4 = 15 us
-        nop
-        nop
-        nop
+        mov     r7,     #3
+        djnz    r7,     .
+
 
 ;;; ---------DHT ACK---------------------
 ;;; R7 = nr of retries OR idle loop
@@ -100,44 +97,41 @@ idlehigh:
 ;;; R6 = bits COUNTER
 ;;; R3 = nr of retries
 
+        mov     r0,     #raddr
+        mov     r4,     #5
+        orl     p2,     #dht11pin       ; PULL UP dht11 (also set as input?)
+
 rbyte:
         mov     r6,     #8
 rbit:
-        mov     r3,     #10
-        orl     p2,     #dht11pin       ; PULL UP dht11 (also set as input?)
+        ;; orl     p2,     #dht11pin       ; PULL UP dht11 (also set as input?)
 lowwait:                                ; 22.5 + 37.5 + orl + MOV*2 = 82.5 us
         in      a,      p2
-        anl     a,      #dht11pin
-        jz      lowdelay                ; got LOW, time to move on
-        djnz    r3,     lowwait         ; try again
-        mov     r0,     #raddr+2
-        mov     @r0,    #errordatalow
-        jmp     holdline                 ; ... start over
-lowdelay:
-        ;; mov     r3,     #2              ; anl+jz+mov = 22.5 us
-        ;; djnz    r3,     .               ; djnz*2     = 15 us
-
-        mov     r3,     #10              ; 22.5 + 15 + mov = 45 us
-        orl     p2,     #dht11pin       ; PULL UP dht11 (also set as input?)
+        jb4     lowwait
+        ;; orl     p2,     #dht11pin       ; PULL UP dht11 (also set as input?)
 highwait:
         in      a,      p2
-        anl     a,      #dht11pin
-        jnz     highidle                ; got HIGH
-        djnz    r3,     highwait        ; try gain
-        mov     r0,     #raddr+3
-        mov     @r0,    #errordatahigh
-        jmp     holdline                ; ... give up
+        jb4     highidle
+        jmp     highwait
 highidle:
-        nop                             ; anl+jnz   = 15
-        nop                             ; nop*5     = 18.75
-        nop                             ; 15 + 18.5 = 33.75
         nop
         nop
-        orl     p2,     #dht11pin       ; PULL UP dht11 data (also set as input?)
+        nop
+        nop
+
+        nop
+        nop
+        nop
+        nop
+
+        nop
+        nop
+
+        ;; orl     p2,     #dht11pin       ; PULL UP dht11 (also set as input?)
         in      a,      p2
-        anl     a,      #dht11pin
         clr     c
-        jz      shiftit
+        jb4     isone
+        jmp     shiftit
 isone:                                  ; cpl             = 3.75
         cpl     c
 shiftit:                                ; movi + rlc + movi = 11.25
@@ -326,3 +320,9 @@ segments:
         .byte #0B10110100       ; 7 0xB4
         .byte #0B11110111       ; 8 0xF7
         .byte #0B11110110       ; 9 0xF6
+        .byte #0B11110101       ; A 0xF5
+        .byte #0B11010111       ; b 0xD7
+        .byte #0B10010011       ; C 0x93
+        .byte #0B01110111       ; d 0x77
+        .byte #0B11010011       ; E 0xD3
+        .byte #0B11010001       ; F 0xD1
