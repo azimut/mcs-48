@@ -77,7 +77,7 @@ eof:
 dataone:
         mov     a,      #(maskenable|maskdata)
         outl    p2,     a
-        mov     a,      #(maskenable|maskclock)
+        mov     a,      #(maskenable|maskdata|maskclock)
         outl    p2,     a
         mov     a,      #(maskenable|maskdata)
         outl    p2,     a

@@ -280,7 +280,7 @@ eof:
 dataone:
         mov     a,      #(dht11pin|maskenable|maskdata)
         outl    p2,     a
-        mov     a,      #(dht11pin|maskenable|maskclock)
+        mov     a,      #(dht11pin|maskenable|maskdata|maskclock)
         outl    p2,     a
         mov     a,      #(dht11pin|maskenable|maskdata)
         outl    p2,     a
