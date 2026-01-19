@@ -92,15 +92,15 @@ idlehigh:
 
 ;;; --------DHT DATA TRANSFER----------------------
 ;;; R0 = byte POINTER
-;;; R4 = byte COUNTER
-;;; R5 = byte RESULT (temporary storage)
-;;; R6 = bits COUNTER
+;;; R1 = bits COUNTER
+;;; R2 = byte RESULT (temporary storage)
+;;; R7 = byte COUNTER
 
         mov     r0,     #raddr
-        mov     r4,     #5
+        mov     r7,     #5
         orl     p2,     #dht11pin       ; PULL UP dht11 (also set as input?)
 rbyte:
-        mov     r6,     #8
+        mov     r1,     #8
 rbit:
         in      a,      p2
         jb4     rbit                    ; loop until LOW
@@ -118,7 +118,9 @@ highidle:
         nop
         nop
         nop
-        nop                             ; nop * 10   = 21.099
+        nop
+        nop
+        nop
         clr     c
         cpl     c                       ; clr + cpl = 4.21
 
@@ -127,15 +129,15 @@ highidle:
         jb4     shiftit
         clr     c
 shiftit:                                ; movi*2 + rlc = 6.32
-        mov     a,      r5
+        mov     a,      r2
         rlc     a
-        mov     r5,     a
+        mov     r2,     a
 endbit:                                 ; djnz*2 + movi*2 + inc  = 14.76
-        djnz    r6,     rbit
-        mov     a,      r5              ; store byte in A
+        djnz    r1,     rbit
+        mov     a,      r2              ; store byte in A
         mov     @r0,    a               ; store byte in RAM
         inc     r0                      ; increase RAM pointer
-        djnz    r4,     rbyte           ; process next byte
+        djnz    r7,     rbyte           ; process next byte
 
 ;;; ------------------------------
 
