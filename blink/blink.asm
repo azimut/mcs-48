@@ -25,8 +25,6 @@ entry:
 
 
 delay:
-        nop
-        nop
-        nop
-        nop
+        mov     r7,     #0xFF   ; R7 = 0xFF
+        djnz    r7,     .       ; R7 = R7 - 1
         ret
