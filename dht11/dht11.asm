@@ -46,14 +46,14 @@ timerroutine:
 
 startup:
 
-        anl     p2,     #dht11pinnot    ; PULL DOWN dht11 data = 18.44 ms
-        mov     r6,     #17             ;  mov
-        mov     r7,     #255            ;  mov * 10
-        djnz    r7,     .               ;  djnz * 240 * 10
-        djnz    r6,     .-4             ;  djnz * 10
+        anl     p2,     #dht11pinnot    ; PULL DOWN dht11 data = 18.7 ms
+        mov     r6,     #35             ;  mov
+        mov     r7,     #255            ;  mov * 35
+        djnz    r7,     .               ;  djnz * 240 * 35
+        djnz    r6,     .-4             ;  djnz * 35
 
         orl     p2,     #dht11pin       ; PULL UP   dht11 data (also set as input?)
-        mov     r7,     #3
+        mov     r7,     #7
         djnz    r7,     .
 
 
@@ -100,39 +100,30 @@ idlehigh:
         mov     r7,     #5
         orl     p2,     #dht11pin       ; PULL UP dht11 (also set as input?)
 rbyte:
+        mov     r2,     #0x00
         mov     r1,     #8
 rbit:
         in      a,      p2
         jb4     rbit                    ; loop until LOW
 highwait:
         in      a,      p2
-        jb4     highidle                ; loop until HIGH
-        jmp     highwait
+        jb4     highidle                ; skil loop on HIGH
+        jmp     highwait                ; loop
 highidle:
-        nop
-        nop
-        nop
-        nop
-        nop
-        nop
-        nop
-        nop
-        nop
-        nop
-        nop
-        nop
+        mov     r6,     #14
+        djnz    r6,     .
         clr     c
-        cpl     c                       ; clr + cpl = 4.21
+        cpl     c
 
         in      a,      p2
 
         jb4     shiftit
         clr     c
-shiftit:                                ; movi*2 + rlc = 6.32
+shiftit:
         mov     a,      r2
         rlc     a
         mov     r2,     a
-endbit:                                 ; djnz*2 + movi*2 + inc  = 14.76
+endbit:
         djnz    r1,     rbit
         mov     a,      r2              ; store byte in A
         mov     @r0,    a               ; store byte in RAM
@@ -177,11 +168,13 @@ loop:
         call    sendnumber
         call    delay
         call    delay
+        call    delay
 
         mov     r0,     #raddr+3
         mov     a,      @r0
         mov     r1,     a
         call    sendnumber
+        call    delay
         call    delay
         call    delay
 
@@ -191,11 +184,13 @@ loop:
         call    sendnumber
         call    delay
         call    delay
+        call    delay
 
         mov     r0,     #raddr+1
         mov     a,      @r0
         mov     r1,     a
         call    sendnumber
+        call    delay
         call    delay
         call    delay
 
@@ -205,10 +200,13 @@ loop:
         call    sendnumber
         call    delay
         call    delay
+        call    delay
 
         mov     a,      #idleseparator
         mov     r1,     a
         call    sendnumber
+        call    delay
+        call    delay
         call    delay
         call    delay
         call    delay
