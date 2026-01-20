@@ -19,7 +19,7 @@ default: $(NAME).rom
 
 # C array representation of given .BIN
 %.h: %.bin
-	hexdump -vC $< | awk -f header.awk | tee $@
+	hexdump -vC $< | awk -f ../header.awk | tee $@
 
 .PHONY: clean
 clean:; rm -vf ./*.sym ./*.lst ./*.rel ./*.hlr ./*.hex ./*.rom ./*.h
