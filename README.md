@@ -10,6 +10,7 @@
   - **/rdigit** hardcoded single digit
   - **/rdigitdb** hardcoded single digit lookup
   - **/counter** real single digit lookup
+- **dht11/** script to read data from a `DHT11` sensor and displays it on 2 digit segment display (maybe working?) needs a clock of at least 8Mhz
 
 ## Makefile targets
 
