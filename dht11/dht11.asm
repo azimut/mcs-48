@@ -232,6 +232,12 @@ sendnumber:                                     ; INPUT(R1)
         mov     a,      #(dht11pin|maskenable)  ; ENABLE = ON
         outl    p2,     a
 
+        ;; Clear CY & AC flags, before DA
+        mov     a,      psw
+        anl     a,      #0B00111111
+        mov     psw,    a
+        clr     c
+
         mov     a,      r1                      ; A  = R1
         da      a                               ; da(A)
         mov     r2,     a                       ; R2 = A
